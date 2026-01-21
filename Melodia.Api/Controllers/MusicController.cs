@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Melodia.Api.Controllers
 {
     [ApiController]
-    [Route("api/music")]
+    [Route("api/[controller]")]
     public class MusicController : ControllerBase
     {
         private readonly IMusicService _service;
@@ -19,12 +19,19 @@ namespace Melodia.Api.Controllers
         [HttpPost("gerar")]
         public async Task<IActionResult> Generate(MusicViewModel request)
         {
-            var audioBytes = await _service.GenerateMusicAsync(
+            var audio = await _service.GenerateMusicAsync(
                 request.Prompt,
-                request.DurationSeconds
+                request.Duracao
             );
 
-            return File(audioBytes, "audio/wav", $"{request.Nome}.wav");
+            if (audio == null)
+            {
+                return BadRequest("Erro ao criar som");
+            }
+
+            var fileName = string.IsNullOrWhiteSpace(request.Nome) ? "music.wav" : $"{request.Nome}.wav";
+
+            return File(audio, "audio/wav", fileName);
         }
     }
 }

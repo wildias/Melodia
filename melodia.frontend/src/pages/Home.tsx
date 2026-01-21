@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import './Home.css';
+import '../style/Home.css';
 import logo from '../assets/images/logo.png';
 import background from '../assets/images/background.png';
+import { generateMusic, downloadMusic } from '../service/musicService';
+import type { MusicViewModel } from '../service/musicService';
 
 function Home() {
   const [soundName, setSoundName] = useState('');
@@ -10,37 +12,35 @@ function Home() {
   const [isCreating, setIsCreating] = useState(false);
   const [musicCreated, setMusicCreated] = useState(false);
   const [musicUrl, setMusicUrl] = useState('');
+  const [musicBlob, setMusicBlob] = useState<Blob | null>(null);
 
   const handleCreate = async () => {
     setIsCreating(true);
     setMusicCreated(false);
     
     try {
-      // Implementar chamada à API
-      const response = await fetch('/api/create-sound', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ soundName, description, duration })
-      });
+      const data: MusicViewModel = {
+        Prompt: description,
+        Duracao: duration,
+        Nome: soundName
+      };
       
-      if (response.ok) {
-        const data = await response.json();
-        setMusicUrl(data.url);
-        setMusicCreated(true);
-      }
+      const audioBlob = await generateMusic(data);
+      const url = window.URL.createObjectURL(audioBlob);
+      setMusicUrl(url);
+      setMusicBlob(audioBlob);
+      setMusicCreated(true);
     } catch (error) {
       console.error('Erro ao criar música:', error);
+      alert('Erro ao criar música. Verifique se a API está rodando.');
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleDownload = () => {
-    if (musicUrl) {
-      const link = document.createElement('a');
-      link.href = musicUrl;
-      link.download = `${soundName || 'musica'}.mp3`;
-      link.click();
+    if (musicBlob) {
+      downloadMusic(musicBlob, soundName || 'musica');
     }
   };
 
